@@ -174,39 +174,6 @@ def adds_square_mission(aLocation, aSize):
     print(" Upload new commands to vehicle")
     cmds.upload()
 
-
-def arm_and_takeoff(aTargetAltitude):
-    """
-    Arms vehicle and fly to aTargetAltitude.
-    """
-
-    print("Basic pre-arm checks")
-    # Don't let the user try to arm until autopilot is ready
-    while not vehicle.is_armable:
-        print(" Waiting for vehicle to initialise...")
-        time.sleep(1)
-
-        
-    print("Arming motors")
-    # Copter should arm in GUIDED mode
-    vehicle.mode = VehicleMode("GUIDED")
-    vehicle.armed = True
-
-    while not vehicle.armed:      
-        print(" Waiting for arming...")
-        time.sleep(1)
-
-    print("Taking off!")
-    vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude
-
-    # Wait until the vehicle reaches a safe height before processing the goto (otherwise the command 
-    #  after Vehicle.simple_takeoff will execute immediately).
-    while True:
-        print(" Altitude: ", vehicle.location.global_relative_frame.alt)      
-        if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95: #Trigger just below target alt.
-            print("Reached target altitude")
-            break
-        time.sleep(1)
 		
 def number_of_waypoints(missionlist):
 	"""
@@ -423,6 +390,7 @@ while True:
 	#print(' Longitude: (%s) ', vehicle.location.global_relative_frame.lon)
 	#print(' Latitude: (%s) ', vehicle.location.global_relative_frame.lat)
 	
+	#this will update user on direction
     if round(time.time())%2 == 0 : #if the time is divisble by 5 it will give directions
         YawNew = vehicle.attitude.yaw * 180 / (math.pi*2)
         direction = YawNew - YawOld
@@ -437,34 +405,6 @@ while True:
                 print('Go Straight')
         YawOld = YawNew
 
-    '''	
-    if time.time() >= stop_time1 - 1 and time.time() <= stop_time1 + 1:
-        print('Object Detected Left')
-        vehicle.mode = VehicleMode("GUIDED")
-        condition_yaw(90)
-        send_ned_velocity(0,5,0,15) #send_ned_velocity(North (relative),0,0,DURATION)
-        vehicle.mode = VehicleMode("AUTO")
-		
-	THESE ARE USED FOR THE DECISION MAKING SUBSYSTEM
-    
-    if time.time() >= stop_time2 - 1 and time.time() <= stop_time2 + 1:
-        print('Object Detected Right')
-        vehicle.mode = VehicleMode("GUIDED")
-        condition_yaw(-90)
-        send_ned_velocity(2,0,0,15) #send_ned_velocity(North(relative),0,0,DURATION)
-        vehicle.mode = VehicleMode("AUTO")
-    ''' 
-    '''
-    if nextwaypoint==NumberOfLegs: #Skip to next waypoint
-        pastwaypoint = nextwaypoint -1
-        print('Skipping to Waypoint %s when reach waypoint %s' % ( nextwaypoint, pastwaypoint))
-        vehicle.commands.next = len(vehicle.commands)
-        #print('The next leg is number: %x' % (vehicle.commands.next))
-		
-    if nextwaypoint==NumberOfLegs+2: #Dummy waypoint - as soon as we reach waypoint 4 this is true and we exit.
-        print("Exit 'standard' mission when start heading to final waypoint (5)")
-        break;
-    '''
     time.sleep(1)
 save_mission(attempt1)
 
