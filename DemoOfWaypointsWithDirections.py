@@ -390,6 +390,20 @@ while True:
 	#print(' Longitude: (%s) ', vehicle.location.global_relative_frame.lon)
 	#print(' Latitude: (%s) ', vehicle.location.global_relative_frame.lat)
 	
+	#this will make the rover hold when the user is out of frame
+    TrackingFunction()
+	#if the function returns a True value the user is out of frame
+    if UserTracking == True
+        vehicle.mode = VehicleMode("HOLD")
+	#system is set to hold to stop the rover
+	sleep(1)
+	while UserTracking:  #this while loop will keep rover in hold until the user is back in frame
+		TrackingFunction()
+		if UserTracking == False # once user is back in frame, the rover will go back into auto mode
+		    vehicle.mode = VehicleMode("AUTO")
+		    break
+	break
+	
 	#this will update user on direction
     if round(time.time())%2 == 0 : #if the time is divisble by 5 it will give directions
         YawNew = vehicle.attitude.yaw * 180 / (math.pi*2)
