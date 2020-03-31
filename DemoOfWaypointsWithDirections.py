@@ -140,40 +140,6 @@ def download_mission():
 
 
 
-def adds_square_mission(aLocation, aSize):
-    """
-    Adds a takeoff command and four waypoint commands to the current mission. 
-    The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
-    The function assumes vehicle.commands matches the vehicle mission state 
-    (you must have called download at least once in the session and after clearing the mission)
-    """	
-
-    cmds = vehicle.commands
-
-    print(" Clear any existing commands")
-    cmds.clear() 
-    
-    print(" Define/add new commands.")
-    # Add new commands. The meaning/order of the parameters is documented in the Command class. 
-     
-    #Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
-
-    #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
-    point1 = get_location_metres(aLocation, aSize, -aSize)
-    point2 = get_location_metres(aLocation, aSize, aSize)
-    point3 = get_location_metres(aLocation, -aSize, aSize)
-    point4 = get_location_metres(aLocation, -aSize, -aSize)
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point1.lat, point1.lon, 11))
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point2.lat, point2.lon, 12))
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point3.lat, point3.lon, 13))
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point4.lat, point4.lon, 14))
-    #add dummy waypoint "5" at point 4 (lets us know when have reached destination)
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point4.lat, point4.lon, 14))    
-
-    print(" Upload new commands to vehicle")
-    cmds.upload()
-
 		
 def number_of_waypoints(missionlist):
 	"""
@@ -192,38 +158,6 @@ def create_dummy_waypoint(NumberOfWayPoints):
 	cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 30.60724360,-96.32654790,100.000000, 1))
 	#cmds.add(Command( 0, 0, 0, 16, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 	
-def send_ned_velocity(velocity_x, velocity_y, velocity_z, duration):
-    """
-    Move vehicle in direction based on specified velocity vectors and
-    for the specified duration.
-    This uses the SET_POSITION_TARGET_LOCAL_NED command with a type mask enabling only 
-    velocity components 
-    (http://dev.ardupilot.com/wiki/copter-commands-in-guided-mode/#set_position_target_local_ned).
-    
-    Note that from AC3.3 the message should be re-sent every second (after about 3 seconds
-    with no message the velocity will drop back to zero). In AC3.2.1 and earlier the specified
-    velocity persists until it is canceled. The code below should work on either version 
-    (sending the message multiple times does not cause problems).
-    
-    See the above link for information on the type_mask (0=enable, 1=ignore). 
-    At time of writing, acceleration and yaw bits are ignored.
-    """
-	
-    msg = vehicle.message_factory.set_position_target_local_ned_encode(
-        0,       # time_boot_ms (not used)
-        0, 0,    # target system, target component
-        mavutil.mavlink.MAV_FRAME_LOCAL_NED, # frame
-        0b0000111111000111, # type_mask (only speeds enabled)
-        0, 0, 0, # x, y, z positions (not used)
-        velocity_x, velocity_y, velocity_z, # x, y, z velocity in m/s
-        0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
-        0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
-	
-    # send command to vehicle on 1 Hz cycle
-    for x in range(0,duration):
-        vehicle.send_mavlink(msg)
-        print('Send Velo Avoiding Obstacle (%s): %s, GPS Coords: %s' % (nextwaypoint, distance_to_current_waypoint(), vehicle.location.global_frame ))
-        time.sleep(1)
     
 def condition_yaw(heading, relative=True):
     """
@@ -253,41 +187,6 @@ def condition_yaw(heading, relative=True):
     # send command to vehicle
     vehicle.send_mavlink(msg)
 	
-def send_global_velocity(velocity_x, velocity_y, velocity_z, duration):
-    """
-    Move vehicle in direction based on specified velocity vectors.
-    This uses the SET_POSITION_TARGET_GLOBAL_INT command with type mask enabling only 
-    velocity components 
-    (http://dev.ardupilot.com/wiki/copter-commands-in-guided-mode/#set_position_target_global_int).
-    
-    Note that from AC3.3 the message should be re-sent every second (after about 3 seconds
-    with no message the velocity will drop back to zero). In AC3.2.1 and earlier the specified
-    velocity persists until it is canceled. The code below should work on either version 
-    (sending the message multiple times does not cause problems).
-    
-    See the above link for information on the type_mask (0=enable, 1=ignore). 
-    At time of writing, acceleration and yaw bits are ignored.
-    """
-    msg = vehicle.message_factory.set_position_target_global_int_encode(
-        0,       # time_boot_ms (not used)
-        0, 0,    # target system, target component
-        mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, # frame
-        0b0000111111000111, # type_mask (only speeds enabled)
-        0, # lat_int - X Position in WGS84 frame in 1e7 * meters
-        0, # lon_int - Y Position in WGS84 frame in 1e7 * meters
-        0, # alt - Altitude in meters in AMSL altitude(not WGS84 if absolute or relative)
-        # altitude above terrain if GLOBAL_TERRAIN_ALT_INT
-        velocity_x, # X velocity in NED frame in m/s
-        velocity_y, # Y velocity in NED frame in m/s
-        velocity_z, # Z velocity in NED frame in m/s
-        0, 0, 0, # afx, afy, afz acceleration (not supported yet, ignored in GCS_Mavlink)
-        0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink) 
-
-    # send command to vehicle on 1 Hz cycle
-    for x in range(0,duration):
-        vehicle.send_mavlink(msg)
-        print('Distance to waypoint (%s): %s, GPS Coords: %s' % (nextwaypoint, distance_to_current_waypoint(), vehicle.location.global_frame ))
-        time.sleep(1)    
 
 def save_mission(aFileName):
     """
